@@ -63,3 +63,29 @@ export const CloseIcon = (p) => (
     <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" />
   </Svg>
 );
+
+export const CopyIcon = (p) => (
+  <Svg {...p}>
+    <rect x="8.5" y="8.5" width="11" height="11" rx="2" />
+    <path d="M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5" />
+  </Svg>
+);
+
+export const CheckIcon = (p) => (
+  <Svg {...p}>
+    <path d="m5 12.5 4.5 4.5L19 7.5" />
+  </Svg>
+);
+
+export const SpeakerIcon = (p) => (
+  <Svg {...p}>
+    <path d="M4.5 9.5h3l4.5-4v13l-4.5-4h-3z" />
+    <path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" />
+  </Svg>
+);
+
+export const RefreshIcon = (p) => (
+  <Svg {...p}>
+    <path d="M19 12a7 7 0 1 1-2.05-4.95M19 4.5v4h-4" />
+  </Svg>
+);

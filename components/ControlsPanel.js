@@ -2,7 +2,7 @@ import OptionGroup from "./OptionGroup";
 import { OUTPUT_LANGUAGES, TARGET_TONES, WRITING_STYLES } from "@/lib/options";
 import { ArrowIcon } from "./icons";
 
-export default function ControlsPanel({ settings, onChange, onTransform }) {
+export default function ControlsPanel({ settings, onChange, onTransform, busy }) {
   const set = (key) => (value) => onChange({ ...settings, [key]: value });
 
   return (
@@ -33,9 +33,10 @@ export default function ControlsPanel({ settings, onChange, onTransform }) {
         <button
           type="button"
           onClick={onTransform}
+          disabled={busy}
           className="btn-ink flex w-full items-center justify-between px-4 py-3 text-[15px] font-medium"
         >
-          <span>Transform</span>
+          <span>{busy ? "Transforming..." : "Transform"}</span>
           <span className="flex items-center gap-2">
             <kbd>Ctrl</kbd>
             <kbd>Enter</kbd>

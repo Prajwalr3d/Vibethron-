@@ -1,3 +1,4 @@
+import Script from "next/script";
 import { Fraunces, Geist, JetBrains_Mono, Caveat } from "next/font/google";
 import "./globals.css";
 
@@ -40,10 +41,12 @@ export default function RootLayout({ children }) {
       suppressHydrationWarning
       className={`${fraunces.variable} ${geist.variable} ${mono.variable} ${caveat.variable} antialiased`}
     >
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      </head>
-      <body className="min-h-dvh">{children}</body>
+      <body className="min-h-dvh">
+        <Script id="theme-init" strategy="beforeInteractive">
+          {themeScript}
+        </Script>
+        {children}
+      </body>
     </html>
   );
 }

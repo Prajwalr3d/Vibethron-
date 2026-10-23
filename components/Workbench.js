@@ -4,19 +4,37 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { appendText } from "@/lib/textStats";
 import { useVoiceInput } from "@/lib/useVoiceInput";
 import { useOcr } from "@/lib/useOcr";
+import { regenerateVibe, transformDraft } from "@/lib/transformClient";
 import DraftPanel from "./DraftPanel";
 import ControlsPanel from "./ControlsPanel";
 import Notice from "./Notice";
-import EmptyState from "./EmptyState";
+import ResultsSection from "./ResultsSection";
 
 const INFO_TIMEOUT_MS = 7000;
+
+function useAutoDismiss(notice, clear) {
+  // Info messages fade on their own; errors stay until dismissed.
+  useEffect(() => {
+    if (notice?.kind !== "info") return;
+    const id = setTimeout(clear, INFO_TIMEOUT_MS);
+    return () => clearTimeout(id);
+  }, [notice, clear]);
+}
+
+const scrollBehavior = () =>
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
 
 export default function Workbench() {
   const [text, setText] = useState("");
   const [settings, setSettings] = useState({ language: "en", style: "professional", tone: "auto" });
   const [voiceHint, setVoiceHint] = useState("auto");
   const [notice, setNotice] = useState(null);
+  const [run, setRun] = useState({ id: 0, status: "idle", result: null, source: null });
+  const [regenerating, setRegenerating] = useState({});
+  const [showChanges, setShowChanges] = useState(false);
+  const [resultsNotice, setResultsNotice] = useState(null);
   const textareaRef = useRef(null);
+  const resultsRef = useRef(null);
 
   const showError = useCallback((message) => setNotice({ kind: "error", message }), []);
   const showInfo = useCallback((message) => setNotice({ kind: "info", message }), []);
@@ -30,14 +48,59 @@ export default function Workbench() {
   const voice = useVoiceInput({ onText: addText, onError: showError, onInfo: showInfo });
   const { ocr, readImage } = useOcr({ onText: addText, onError: showError, onInfo: showInfo });
 
-  const transform = () => {
+  const resultsError = useCallback((message) => setResultsNotice({ kind: "error", message }), []);
+  const clearNotice = useCallback(() => setNotice(null), []);
+  const clearResultsNotice = useCallback(() => setResultsNotice(null), []);
+  useAutoDismiss(notice, clearNotice);
+  useAutoDismiss(resultsNotice, clearResultsNotice);
+
+  const loading = run.status === "loading";
+
+  const transform = async () => {
+    if (loading) return;
     if (!text.trim()) {
       showError("Write, paste, dictate or upload a draft first.");
       textareaRef.current?.focus();
       return;
     }
-    // Phase 2 connects this to /api/transform.
-    showInfo("Draft and brief are ready. Transform is connected in the next build phase.");
+    const source = { text: text.trim(), settings };
+    setNotice(null);
+    setResultsNotice(null);
+    setRun((r) => ({ ...r, status: "loading" }));
+    resultsRef.current?.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
+    try {
+      const result = await transformDraft(source.text, settings);
+      setRegenerating({});
+      setRun((r) => ({ id: r.id + 1, status: "done", result, source }));
+    } catch (err) {
+      // Keep any earlier result on screen if this attempt failed.
+      setRun((r) => ({ ...r, status: r.result ? "done" : "idle" }));
+      resultsError(err.message);
+    }
+  };
+
+  const regenerate = async (vibeId) => {
+    const { id: runId, source, result } = run;
+    const previous = result?.vibes.find((v) => v.id === vibeId);
+    if (!previous) return;
+    setRegenerating((r) => ({ ...r, [vibeId]: true }));
+    try {
+      const vibe = await regenerateVibe(source.text, source.settings, vibeId, previous.text);
+      // Ignore the answer if a newer full transform replaced these cards meanwhile.
+      setRun((r) =>
+        r.id === runId && r.result
+          ? { ...r, result: { ...r.result, vibes: r.result.vibes.map((v) => (v.id === vibeId ? vibe : v)) } }
+          : r
+      );
+    } catch (err) {
+      resultsError(`Couldn't regenerate ${previous.name}. ${err.message}`);
+    } finally {
+      setRegenerating((r) => {
+        const next = { ...r };
+        delete next[vibeId];
+        return next;
+      });
+    }
   };
 
   // Ctrl/Cmd + Enter from anywhere on the page.
@@ -55,13 +118,6 @@ export default function Workbench() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
-
-  // Info messages fade on their own; errors stay until dismissed.
-  useEffect(() => {
-    if (notice?.kind !== "info") return;
-    const id = setTimeout(() => setNotice(null), INFO_TIMEOUT_MS);
-    return () => clearTimeout(id);
-  }, [notice]);
 
   return (
     <>
@@ -83,18 +139,20 @@ export default function Workbench() {
           />
           <Notice notice={notice} onDismiss={() => setNotice(null)} />
         </div>
-        <ControlsPanel settings={settings} onChange={setSettings} onTransform={transform} />
+        <ControlsPanel settings={settings} onChange={setSettings} onTransform={transform} busy={loading} />
       </div>
 
-      <section className="reveal mt-14 pb-20" style={{ "--i": 3 }} aria-labelledby="results-heading">
-        <div className="mb-5 flex items-baseline justify-between gap-4 border-b border-rule-strong pb-3">
-          <h2 id="results-heading" className="font-display text-2xl font-medium tracking-tight">
-            The redline
-          </h2>
-          <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">4 vibes</p>
-        </div>
-        <EmptyState />
-      </section>
+      <ResultsSection
+        sectionRef={resultsRef}
+        run={run}
+        notice={resultsNotice}
+        onDismissNotice={clearResultsNotice}
+        showChanges={showChanges}
+        onToggleChanges={() => setShowChanges((s) => !s)}
+        regenerating={regenerating}
+        onRegenerate={regenerate}
+        onNotice={resultsError}
+      />
     </>
   );
 }

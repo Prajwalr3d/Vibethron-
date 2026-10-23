@@ -313,3 +313,37 @@ kbd {
     animation: none;
   }
 }
+
+/* ---------- Diff marks ---------- */
+.ins-mark {
+  text-decoration: none;
+  background: var(--marker);
+  border-radius: 2px 5px 3px 6px;
+  padding: 0.05em 0.1em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+.del-pen {
+  color: var(--ink-faint);
+  text-decoration: line-through;
+  text-decoration-color: var(--redpen);
+  text-decoration-thickness: 2px;
+}
+
+/* ---------- Loading skeletons ---------- */
+.skeleton-line {
+  height: 9px;
+  border-radius: 999px;
+  background: var(--rule);
+}
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes skeleton-pulse {
+    50% {
+      opacity: 0.45;
+    }
+  }
+  .skeleton-line {
+    animation: skeleton-pulse 1.4s ease-in-out infinite;
+    animation-delay: calc(var(--d, 0) * 120ms);
+  }
+}
