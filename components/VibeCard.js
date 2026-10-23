@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { changeStats, wordDiff } from "@/lib/changeStats";
 import { checkFacts } from "@/lib/factguard";
 import { speak, stopSpeaking } from "@/lib/speech";
+import { copyText } from "@/lib/clipboard";
 import DiffText from "./DiffText";
 import FactText from "./FactText";
 import CardStats from "./CardStats";
@@ -13,24 +14,6 @@ import IntentBadge from "./IntentBadge";
 import ToneMeters from "./ToneMeters";
 import DriftView from "./DriftView";
 import { CheckIcon, CloseIcon, CopyIcon, RefreshIcon, SpeakerIcon, StopIcon } from "./icons";
-
-async function copyText(text) {
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch {
-    // Fallback for browsers that block the async clipboard API.
-    const area = document.createElement("textarea");
-    area.value = text;
-    area.style.position = "fixed";
-    area.style.opacity = "0";
-    document.body.appendChild(area);
-    area.select();
-    const ok = document.execCommand("copy");
-    area.remove();
-    return ok;
-  }
-}
 
 export default function VibeCard({ vibe, index, original, originalTone, language, meaning, showChanges, regenerating, canRegenerate, onRegenerate, onRemove, onNotice }) {
   const [copied, setCopied] = useState(false);
@@ -69,7 +52,7 @@ export default function VibeCard({ vibe, index, original, originalTone, language
   };
 
   return (
-    <article className="sheet reveal flex min-w-0 flex-col" style={{ "--i": index }}>
+    <article className="sheet sheet-lift reveal flex min-w-0 flex-col" style={{ "--i": index }}>
       <header className="flex items-start justify-between gap-3 px-5 pt-5 sm:px-6">
         <div className="min-w-0">
           <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-faint">

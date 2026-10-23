@@ -1,7 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { appendText } from "@/lib/textStats";
+import { appendText, draftProblem } from "@/lib/textStats";
+import { cachedTone, cachedTransform } from "@/lib/cached";
+import { useToasts } from "@/lib/useToasts";
+import Toaster from "./Toaster";
 import { useVoiceInput } from "@/lib/useVoiceInput";
 import { useOcr } from "@/lib/useOcr";
 import { detectTone, regenerateVibe, transformDraft } from "@/lib/transformClient";
@@ -40,6 +43,8 @@ export default function Workbench() {
   const [addingAudience, setAddingAudience] = useState(null);
   const [meaningScores, setMeaningScores] = useState({});
   const [tone, setTone] = useState({ status: "idle", data: null, forText: "" });
+  const [offline, setOffline] = useState(false);
+  const { toasts, push: toast, dismiss: dismissToast } = useToasts();
   const requestedScores = useRef(new Set());
   const textareaRef = useRef(null);
   const resultsRef = useRef(null);
@@ -56,20 +61,46 @@ export default function Workbench() {
 
   const voice = useVoiceInput({ onText: addText, onError: showError, onInfo: showInfo });
   const { ocr, readImage } = useOcr({ onText: addText, onError: showError, onInfo: showInfo });
-  const grammar = useGrammar({ text, setText, onError: showError, onInfo: showInfo });
+  // Offline demo mode: an AI call failed on a sample draft, so saved results stand in.
+  const offlineRef = useRef(false);
+  const goOffline = useCallback(() => {
+    if (!offlineRef.current) {
+      toast("info", "Offline demo mode: the AI is unavailable, so you're seeing saved results for this sample.");
+    }
+    offlineRef.current = true;
+    setOffline(true);
+  }, [toast]);
+  const goOnline = () => {
+    offlineRef.current = false;
+    setOffline(false);
+  };
+
+  const grammar = useGrammar({ text, setText, onError: showError, onInfo: showInfo, onOffline: goOffline });
+
+  /** Shows the draft problem next to the textarea; true if the draft is usable. */
+  const draftOk = () => {
+    const problem = draftProblem(text);
+    if (!problem) return true;
+    showError(problem);
+    textareaRef.current?.focus();
+    return false;
+  };
 
   const runToneDetection = async () => {
+    if (!draftOk()) return;
     const forText = text.trim();
-    if (!forText) {
-      showError("Write or paste a draft first.");
-      textareaRef.current?.focus();
-      return;
-    }
     setTone((t) => ({ ...t, status: "loading" }));
     try {
       const data = await detectTone(forText);
       setTone({ status: "done", data, forText });
+      goOnline();
     } catch (err) {
+      const saved = cachedTone(forText);
+      if (saved) {
+        setTone({ status: "done", data: saved, forText });
+        goOffline();
+        return;
+      }
       setTone((t) => ({ ...t, status: t.data ? "done" : "idle" }));
       showError(err.message);
     }
@@ -84,19 +115,14 @@ export default function Workbench() {
   const loading = run.status === "loading";
 
   const transform = async () => {
-    if (loading) return;
-    if (!text.trim()) {
-      showError("Write, paste, dictate or upload a draft first.");
-      textareaRef.current?.focus();
-      return;
-    }
+    if (loading || !draftOk()) return;
     const source = { text: text.trim(), settings };
     setNotice(null);
     setResultsNotice(null);
     setRun((r) => ({ ...r, status: "loading" }));
     resultsRef.current?.scrollIntoView({ behavior: scrollBehavior(), block: "start" });
-    try {
-      const result = await transformDraft(source.text, settings);
+
+    const show = (result) => {
       setRegenerating({});
       setRun((r) => ({ id: r.id + 1, status: "done", result, source }));
       // The transform also reads the draft's tone, so the tone card stays in sync for free.
@@ -105,10 +131,24 @@ export default function Workbench() {
         data: { original_intent: result.original_intent, original_tone: result.original_tone },
         forText: source.text,
       });
+    };
+
+    try {
+      show(await transformDraft(source.text, settings));
+      goOnline();
     } catch (err) {
+      const saved = cachedTransform(source.text);
+      if (saved) {
+        // Saved results are English; say so if another language was asked for.
+        source.settings = { ...settings, language: "en" };
+        show(saved);
+        goOffline();
+        if (settings.language !== "en") toast("info", "Saved demo results are in English only.");
+        return;
+      }
       // Keep any earlier result on screen if this attempt failed.
       setRun((r) => ({ ...r, status: r.result ? "done" : "idle" }));
-      resultsError(err.message);
+      resultsError(`${err.message} The three sample drafts still work in offline demo mode.`);
     }
   };
 
@@ -126,7 +166,12 @@ export default function Workbench() {
           : r
       );
     } catch (err) {
-      resultsError(`Couldn't regenerate ${previous.name}. ${err.message}`);
+      toast(
+        "error",
+        offline
+          ? `Regenerating needs the AI, which is unavailable. ${previous.name} keeps its saved version.`
+          : `Couldn't regenerate ${previous.name}. ${err.message}`
+      );
     } finally {
       setRegenerating((r) => {
         const next = { ...r };
@@ -148,7 +193,12 @@ export default function Workbench() {
       );
       return true;
     } catch (err) {
-      resultsError(`Couldn't write for "${audience}". ${err.message}`);
+      toast(
+        "error",
+        offline
+          ? "Custom audiences need the AI, which is unavailable in offline demo mode."
+          : `Couldn't write for "${audience}". ${err.message}`
+      );
       return false;
     } finally {
       setAddingAudience(null);
@@ -216,6 +266,7 @@ export default function Workbench() {
         <div className="flex min-w-0 flex-col gap-3">
           <DraftPanel
             text={text}
+            onInfo={showInfo}
             onTextChange={setText}
             textareaRef={textareaRef}
             voice={voice}
@@ -243,6 +294,7 @@ export default function Workbench() {
           onTransform={transform}
           busy={loading}
           meaningModels={meaningModels}
+          offline={offline}
         />
       </div>
 
@@ -255,12 +307,15 @@ export default function Workbench() {
         onToggleChanges={() => setShowChanges((s) => !s)}
         regenerating={regenerating}
         onRegenerate={regenerate}
-        onNotice={resultsError}
+        onNotice={(message) => toast("error", message)}
+        onToast={toast}
+        offline={offline}
         meaningFor={meaningFor}
         addingAudience={addingAudience}
         onAddAudience={addAudience}
         onRemoveAudience={removeAudience}
       />
+      <Toaster toasts={toasts} onDismiss={dismissToast} />
     </>
   );
 }

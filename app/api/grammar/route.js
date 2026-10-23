@@ -2,7 +2,7 @@ import { FriendlyError, generateJson } from "@/lib/gemini";
 import { MAX_GRAMMAR_BYTES, STRICTNESS, fromLanguageTool, grammarEngineFor, locateIssues } from "@/lib/grammar";
 import { ANALYST_INSTRUCTION, buildGrammarPrompt } from "@/lib/prompt";
 import { allow, clientKey } from "@/lib/rateLimit";
-import { MAX_CHARS } from "@/lib/textStats";
+import { MAX_CHARS, hasWords } from "@/lib/textStats";
 import { GRAMMAR_SCHEMA, normalizeGrammar } from "@/lib/transformSchema";
 
 const LT_URL = "https://api.languagetool.org/v2/check";
@@ -51,6 +51,7 @@ export async function POST(request) {
   const body = await request.json().catch(() => null);
   const text = typeof body?.text === "string" ? body.text : "";
   if (!text.trim()) return fail(400, "Write or paste a draft first.", "empty");
+  if (!hasWords(text)) return fail(400, "Add some words; there's nothing to check yet.", "no_words");
   if (text.length > MAX_CHARS || new TextEncoder().encode(text).length > MAX_GRAMMAR_BYTES) {
     return fail(413, "That draft is too long to check.", "too_long");
   }

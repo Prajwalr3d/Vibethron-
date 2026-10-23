@@ -95,3 +95,20 @@ test("a sentence-ending full stop is not part of a time", () => {
   expect(r.facts[0].raw).toBe("6:30 PM");
   expect(r.marks.map((m) => rewrite.slice(m.start, m.end))).toEqual(["6:30 PM"]);
 });
+
+test("numbers-heavy drafts: every figure is tracked, reordered or reformatted", () => {
+  const original =
+    "Q3 numbers: revenue ₹4,25,000 (up 12.5%), costs ₹1,80,500, margin 57.5%. Orders 1,284 vs 1,102 in Q2. " +
+    "Refunds 37, returns 2.9%. Payroll on 1 Oct, audit on 15 Oct at 10:30 AM, board review 22 Oct, 3 PM. Target 1,500 orders by 31 Dec.";
+  const rewrite =
+    "Q3 dates: board review is 22 Oct at 3 PM; audit 15 Oct, 10:30 am; payroll 1 Oct. Revenue rose 12.5 percent to Rs 425000, " +
+    "with costs at Rs 180500 and a 57.5% margin. We had 1284 orders (Q2: 1102), 37 refunds and a 2.9% return rate. " +
+    "Goal: 1500 orders by 31 December.";
+  const start = performance.now();
+  const r = checkFacts(original, rewrite);
+  expect(performance.now() - start).toBeLessThan(50);
+  expect(r.facts.length).toBeGreaterThanOrEqual(17);
+  expect(missingRaw(r)).toEqual([]);
+  // Dropping one figure out of many is still caught.
+  expect(missingRaw(checkFacts(original, rewrite.replace("37 refunds and ", "")))).toEqual(["37"]);
+});

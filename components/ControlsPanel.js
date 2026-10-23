@@ -2,8 +2,9 @@ import OptionGroup from "./OptionGroup";
 import { OUTPUT_LANGUAGES, TARGET_TONES, WRITING_STYLES } from "@/lib/options";
 import { ArrowIcon } from "./icons";
 import MeaningStatus from "./MeaningStatus";
+import OfflineBadge from "./OfflineBadge";
 
-export default function ControlsPanel({ settings, onChange, onTransform, busy, meaningModels }) {
+export default function ControlsPanel({ settings, onChange, onTransform, busy, meaningModels, offline }) {
   const set = (key) => (value) => onChange({ ...settings, [key]: value });
 
   return (
@@ -44,8 +45,9 @@ export default function ControlsPanel({ settings, onChange, onTransform, busy, m
             <ArrowIcon />
           </span>
         </button>
-        <div className="mt-3">
+        <div className="mt-3 flex flex-col items-start gap-2">
           <MeaningStatus models={meaningModels} />
+          {offline && <OfflineBadge />}
         </div>
       </div>
     </section>

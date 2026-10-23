@@ -120,6 +120,16 @@ body::before {
   box-shadow: var(--shadow-sheet);
 }
 
+/* Rewrite cards lift slightly under the pointer, like a sheet picked up off the desk */
+.sheet-lift {
+  transition: box-shadow 220ms ease;
+}
+@media (hover: hover) {
+  .sheet-lift:hover {
+    box-shadow: var(--shadow-sheet), 0 14px 30px -20px rgba(60, 40, 20, 0.45);
+  }
+}
+
 /* Legal-pad textarea: red margin rule + faint blue lines */
 .ruled {
   --line: 28px;
@@ -456,4 +466,107 @@ kbd {
   --series-4: #c98500;
   --series-5: #d55181;
   --series-neutral: #5d574e;
+}
+
+/* ---------- Print report ("Download report" -> Save as PDF) ---------- */
+.print-report {
+  display: none;
+}
+@media print {
+  @page {
+    size: A4;
+    margin: 10mm;
+  }
+  html,
+  body {
+    background: #fff !important;
+  }
+  body::before {
+    display: none;
+  }
+  body > *:not(.print-report) {
+    display: none !important;
+  }
+  .print-report {
+    display: block;
+    color: #1d1a16;
+    font-family: var(--font-sans);
+    font-size: 8.2pt;
+    line-height: 1.35;
+  }
+  .print-report h1 {
+    font-family: var(--font-display);
+    font-size: 17pt;
+    font-weight: 500;
+    line-height: 1.1;
+  }
+  .print-report h2 {
+    font-family: var(--font-display);
+    font-size: 10pt;
+    font-weight: 600;
+    margin-bottom: 2pt;
+  }
+  .pr-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 12pt;
+    border-bottom: 1.5pt solid #1d1a16;
+    padding-bottom: 5pt;
+    margin-bottom: 6pt;
+  }
+  .pr-header p {
+    color: #5f584d;
+  }
+  .pr-meta {
+    text-align: right;
+    font-family: var(--font-mono);
+    font-size: 7pt;
+  }
+  .pr-original {
+    border: 0.75pt solid #d8d1c4;
+    padding: 5pt 7pt;
+    margin-bottom: 6pt;
+  }
+  .pr-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6pt 10pt;
+  }
+  .pr-vibe {
+    break-inside: avoid;
+    border-top: 0.75pt solid #d8d1c4;
+    padding-top: 4pt;
+  }
+  .pr-text {
+    white-space: pre-wrap;
+    margin-bottom: 3pt;
+  }
+  .pr-proof {
+    color: #5f584d;
+    font-size: 7.2pt;
+  }
+  .pr-stamp {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 7pt;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border: 1pt solid currentColor;
+    padding: 0.5pt 3pt;
+    margin-bottom: 2pt;
+  }
+  .pr-stamp.ok {
+    color: #2f6b3b;
+  }
+  .pr-stamp.bad {
+    color: #b42a1f;
+  }
+  .pr-footer {
+    margin-top: 6pt;
+    border-top: 0.75pt solid #d8d1c4;
+    padding-top: 3pt;
+    color: #8f877a;
+    font-size: 6.8pt;
+  }
 }

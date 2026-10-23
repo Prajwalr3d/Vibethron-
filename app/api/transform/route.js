@@ -1,6 +1,6 @@
 import { FriendlyError, generateJson } from "@/lib/gemini";
 import { OUTPUT_LANGUAGES, TARGET_TONES, WRITING_STYLES } from "@/lib/options";
-import { MAX_CHARS } from "@/lib/textStats";
+import { MAX_CHARS, hasWords } from "@/lib/textStats";
 import { SYSTEM_INSTRUCTION, buildFullPrompt, buildSinglePrompt } from "@/lib/prompt";
 import { FULL_SCHEMA, SINGLE_SCHEMA, normalizeFull, normalizeSingle } from "@/lib/transformSchema";
 import { VIBES, customVibe, vibeById } from "@/lib/vibes";
@@ -25,6 +25,7 @@ export async function POST(request) {
 
   const text = typeof body.text === "string" ? body.text.trim() : "";
   if (!text) return fail(400, "Write or paste a draft first.", "empty");
+  if (!hasWords(text)) return fail(400, "Add some words; emoji or symbols alone can't be rewritten.", "no_words");
   if (text.length > MAX_CHARS) {
     return fail(413, `Drafts can be up to ${MAX_CHARS.toLocaleString("en-IN")} characters.`, "too_long");
   }

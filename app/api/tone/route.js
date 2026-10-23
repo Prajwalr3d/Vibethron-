@@ -1,6 +1,6 @@
 import { FriendlyError, generateJson } from "@/lib/gemini";
 import { ANALYST_INSTRUCTION, buildTonePrompt } from "@/lib/prompt";
-import { MAX_CHARS } from "@/lib/textStats";
+import { MAX_CHARS, hasWords } from "@/lib/textStats";
 import { TONE_SCHEMA, normalizeOriginal } from "@/lib/transformSchema";
 
 /** POST { text } -> { original_intent, original_tone } */
@@ -8,6 +8,9 @@ export async function POST(request) {
   const body = await request.json().catch(() => null);
   const text = typeof body?.text === "string" ? body.text.trim() : "";
   if (!text) return Response.json({ error: "Write or paste a draft first.", code: "empty" }, { status: 400 });
+  if (!hasWords(text)) {
+    return Response.json({ error: "Add some words; emoji or symbols alone have no tone to read.", code: "no_words" }, { status: 400 });
+  }
   if (text.length > MAX_CHARS) {
     return Response.json({ error: "That draft is too long.", code: "too_long" }, { status: 413 });
   }

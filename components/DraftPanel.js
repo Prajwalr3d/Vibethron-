@@ -16,7 +16,7 @@ function imageFrom(items) {
   return null;
 }
 
-export default function DraftPanel({ text, onTextChange, textareaRef, voice, voiceHint, onVoiceHintChange, ocr, onImage, onSample }) {
+export default function DraftPanel({ text, onTextChange, textareaRef, voice, voiceHint, onVoiceHintChange, ocr, onImage, onSample, onInfo }) {
   const fileRef = useRef(null);
   const dragDepth = useRef(0);
   const [dragging, setDragging] = useState(false);
@@ -43,6 +43,13 @@ export default function DraftPanel({ text, onTextChange, textareaRef, voice, voi
     if (file) {
       e.preventDefault();
       onImage(file);
+      return;
+    }
+    // maxLength trims pastes silently; say so.
+    const { selectionStart, selectionEnd, value } = e.currentTarget;
+    const room = MAX_CHARS - (value.length - (selectionEnd - selectionStart));
+    if ((e.clipboardData?.getData("text") ?? "").length > room) {
+      onInfo("The pasted text was trimmed to fit the 3,000 character limit.");
     }
   };
 

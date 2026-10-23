@@ -74,7 +74,7 @@ export default function GrammarPanel({ grammar, text }) {
           <div className="flex items-center justify-between gap-3 border-b border-rule pb-2">
             <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">
               {issues.length} {issues.length === 1 ? "suggestion" : "suggestions"} &middot;{" "}
-              {engine === "gemini" ? "AI-checked" : "LanguageTool"}
+              {{ gemini: "AI-checked", offline: "Saved demo results" }[engine] || "LanguageTool"}
             </p>
             {fixable > 1 && (
               <button type="button" onClick={grammar.acceptAll} className="text-[13px] text-pencil hover:underline">
