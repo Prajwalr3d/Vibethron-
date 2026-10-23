@@ -1,5 +1,6 @@
 import { VIBES } from "@/lib/vibes";
 import AudienceForm from "./AudienceForm";
+import InsightsSection from "./insights/InsightsSection";
 import EmptyState from "./EmptyState";
 import Notice from "./Notice";
 import VibeCard from "./VibeCard";
@@ -93,6 +94,7 @@ export default function ResultsSection({
               <AudienceForm busy={!!addingAudience} onAdd={onAddAudience} />
             </div>
           )}
+          <InsightsSection result={result} source={source} meaningFor={meaningFor} />
         </>
       ) : (
         <EmptyState />

@@ -4,9 +4,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { appendText } from "@/lib/textStats";
 import { useVoiceInput } from "@/lib/useVoiceInput";
 import { useOcr } from "@/lib/useOcr";
-import { regenerateVibe, transformDraft } from "@/lib/transformClient";
+import { detectTone, regenerateVibe, transformDraft } from "@/lib/transformClient";
 import { useMeaning } from "@/lib/useMeaning";
+import { useGrammar } from "@/lib/useGrammar";
 import { modelFor } from "@/lib/meaning";
+import PreflightPanel from "./PreflightPanel";
 import DraftPanel from "./DraftPanel";
 import ControlsPanel from "./ControlsPanel";
 import Notice from "./Notice";
@@ -37,6 +39,7 @@ export default function Workbench() {
   const [resultsNotice, setResultsNotice] = useState(null);
   const [addingAudience, setAddingAudience] = useState(null);
   const [meaningScores, setMeaningScores] = useState({});
+  const [tone, setTone] = useState({ status: "idle", data: null, forText: "" });
   const requestedScores = useRef(new Set());
   const textareaRef = useRef(null);
   const resultsRef = useRef(null);
@@ -53,6 +56,24 @@ export default function Workbench() {
 
   const voice = useVoiceInput({ onText: addText, onError: showError, onInfo: showInfo });
   const { ocr, readImage } = useOcr({ onText: addText, onError: showError, onInfo: showInfo });
+  const grammar = useGrammar({ text, setText, onError: showError, onInfo: showInfo });
+
+  const runToneDetection = async () => {
+    const forText = text.trim();
+    if (!forText) {
+      showError("Write or paste a draft first.");
+      textareaRef.current?.focus();
+      return;
+    }
+    setTone((t) => ({ ...t, status: "loading" }));
+    try {
+      const data = await detectTone(forText);
+      setTone({ status: "done", data, forText });
+    } catch (err) {
+      setTone((t) => ({ ...t, status: t.data ? "done" : "idle" }));
+      showError(err.message);
+    }
+  };
 
   const resultsError = useCallback((message) => setResultsNotice({ kind: "error", message }), []);
   const clearNotice = useCallback(() => setNotice(null), []);
@@ -78,6 +99,12 @@ export default function Workbench() {
       const result = await transformDraft(source.text, settings);
       setRegenerating({});
       setRun((r) => ({ id: r.id + 1, status: "done", result, source }));
+      // The transform also reads the draft's tone, so the tone card stays in sync for free.
+      setTone({
+        status: "done",
+        data: { original_intent: result.original_intent, original_tone: result.original_tone },
+        forText: source.text,
+      });
     } catch (err) {
       // Keep any earlier result on screen if this attempt failed.
       setRun((r) => ({ ...r, status: r.result ? "done" : "idle" }));
@@ -202,6 +229,13 @@ export default function Workbench() {
             }}
           />
           <Notice notice={notice} onDismiss={() => setNotice(null)} />
+          <PreflightPanel
+            text={text}
+            tone={tone}
+            targetTone={settings.tone}
+            onDetectTone={runToneDetection}
+            grammar={grammar}
+          />
         </div>
         <ControlsPanel
           settings={settings}
