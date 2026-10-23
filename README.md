@@ -6,6 +6,8 @@ INTENT / SHIFT rewrites a rough message for four personas (Executive, Supportive
 
 Built for the hackathon problem "Instant Persona and Communication Transformer". One Next.js (App Router) project: the INTENT / SHIFT React interface (`spa/`, react-router, three.js) is served by `app/[[...slug]]/page.js`, and the backend lives in `app/api/*`.
 
+-----------LIVE DEMO-----------  : https://vibethron.vercel.app/ 
+
 ## Pages
 
 | Page | What it does |
