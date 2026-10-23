@@ -42,6 +42,7 @@ function ChangesToggle({ on, disabled, onToggle }) {
 export default function ResultsSection({
   sectionRef, run, notice, onDismissNotice, showChanges, onToggleChanges, regenerating, onRegenerate, onNotice,
   meaningFor, addingAudience, onAddAudience, onRemoveAudience, offline, onToast,
+  focusVibe, strictness, onSave,
 }) {
   const { status, result, source } = run;
   const loading = status === "loading";
@@ -49,11 +50,11 @@ export default function ResultsSection({
   const report = result && !loading ? reportData({ result, source, meaningFor }) : null;
 
   return (
-    <section ref={sectionRef} className="reveal mt-14 scroll-mt-6 pb-20" style={{ "--i": 3 }} aria-labelledby="results-heading">
+    <section ref={sectionRef} className="reveal mt-14 scroll-mt-24 pb-20" style={{ "--i": 3 }} aria-labelledby="results-heading">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-rule-strong pb-3">
         <div className="flex flex-wrap items-center gap-3">
-          <h2 id="results-heading" className="font-display text-2xl font-medium tracking-tight">
-            The redline
+          <h2 id="results-heading" className="font-display text-2xl font-bold uppercase tracking-tight">
+            Transformed output
           </h2>
           {offline && result && !loading && <OfflineBadge />}
         </div>
@@ -99,6 +100,9 @@ export default function ResultsSection({
                 onRegenerate={onRegenerate}
                 onRemove={vibe.id === "custom" ? onRemoveAudience : undefined}
                 onNotice={onNotice}
+                focused={vibe.id === focusVibe}
+                strictness={strictness}
+                onSave={onSave}
               />
             ))}
             {addingAudience && (

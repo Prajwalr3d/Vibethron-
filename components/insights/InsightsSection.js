@@ -57,7 +57,7 @@ export default function InsightsSection({ result, source, meaningFor }) {
   return (
     <section className="mt-14" aria-labelledby="insights-heading">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-rule-strong pb-3">
-        <h2 id="insights-heading" className="font-display text-2xl font-medium tracking-tight">
+        <h2 id="insights-heading" className="font-display text-2xl font-bold uppercase tracking-tight">
           Insights
         </h2>
         <button

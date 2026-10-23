@@ -1,52 +1,23 @@
-import Script from "next/script";
-import { Fraunces, Geist, JetBrains_Mono, Caveat } from "next/font/google";
+import { IBM_Plex_Mono, Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
+import "../spa/index.css";
 
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
-  subsets: ["latin"],
-  axes: ["opsz", "SOFT"],
-  style: ["normal", "italic"],
-});
-
-const geist = Geist({
-  variable: "--font-geist",
-  subsets: ["latin"],
-});
-
-const mono = JetBrains_Mono({
-  variable: "--font-jetbrains",
-  subsets: ["latin"],
-});
-
-const caveat = Caveat({
-  variable: "--font-caveat",
-  subsets: ["latin"],
-  weight: ["500", "700"],
-});
+const display = Space_Grotesk({ variable: "--font-space-grotesk", subsets: ["latin"], weight: ["600", "700"] });
+const body = Inter({ variable: "--font-inter", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
+const mono = IBM_Plex_Mono({ variable: "--font-plex-mono", subsets: ["latin"], weight: ["400", "500", "600"], style: ["normal", "italic"] });
 
 export const metadata = {
-  title: "VibeShift: rewrite for any audience, keep every fact",
+  title: "INTENT / SHIFT: AI communication transformer with IntentLock",
   description:
-    "Rewrite a draft into audience vibes and see exactly what changed, with proof your facts survived.",
+    "Rewrite a rough message for executive, supportive, legal or Gen-Z readers, and prove that its facts, deadlines, conditions and intent survived.",
 };
 
-// Runs before paint so the saved theme never flashes the wrong colors.
-const themeScript = `(function(){try{var t=localStorage.getItem('vibeshift-theme');if(t!=='light'&&t!=='dark'){t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}document.documentElement.dataset.theme=t}catch(e){document.documentElement.dataset.theme='light'}})()`;
+export const viewport = { themeColor: "#0B0B0B", colorScheme: "dark" };
 
 export default function RootLayout({ children }) {
   return (
-    <html
-      lang="en"
-      suppressHydrationWarning
-      className={`${fraunces.variable} ${geist.variable} ${mono.variable} ${caveat.variable} antialiased`}
-    >
-      <body className="min-h-dvh">
-        <Script id="theme-init" strategy="beforeInteractive">
-          {themeScript}
-        </Script>
-        {children}
-      </body>
+    <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable} antialiased`}>
+      <body>{children}</body>
     </html>
   );
 }

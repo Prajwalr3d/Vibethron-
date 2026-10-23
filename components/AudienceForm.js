@@ -14,7 +14,7 @@ export default function AudienceForm({ busy, onAdd }) {
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-3 rounded-[6px] border border-dashed border-rule-strong p-4 sm:flex-row sm:items-center sm:p-5">
-      <label htmlFor="audience" className="shrink-0 font-display text-[17px] italic">
+      <label htmlFor="audience" className="panel-title shrink-0">
         Write for someone else
       </label>
       <input

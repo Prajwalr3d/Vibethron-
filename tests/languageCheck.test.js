@@ -26,3 +26,17 @@ test("capitalised weekday abbreviations count, lowercase words don't", () => {
   expect(checkFacts("It was due Monday 9 AM and came in Wednesday at 4 PM.", "Due Mon 9 AM, reached Wed 4 PM.").passed).toBe(true);
   expect(checkFacts("Send it by Wednesday.", "They will wed soon.").passed).toBe(false);
 });
+
+import { buildFullPrompt } from "@/lib/prompt";
+import { VIBES } from "@/lib/vibes";
+
+test("studio fine-tuning and preserve-quotes reach the prompt only when set", () => {
+  const base = { language: "en", style: "professional", tone: "auto" };
+  const plain = buildFullPrompt({ text: "hi", settings: base, vibes: VIBES });
+  expect(plain).not.toContain("Fine-tuning");
+  expect(plain).not.toContain("quotation marks");
+  const tuned = buildFullPrompt({ text: "hi", settings: { ...base, tune: { formality: 85, directness: 20 }, preserveQuotes: true }, vibes: VIBES });
+  expect(tuned).toContain("very high formality (85/100)");
+  expect(tuned).toContain("low directness (20/100)");
+  expect(tuned).toContain("quotation marks");
+});

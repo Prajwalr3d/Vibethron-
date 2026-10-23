@@ -15,6 +15,15 @@ function fail(status, error, code) {
   return Response.json({ error, code }, { status });
 }
 
+/** Optional { formality, directness } targets (0-100) from the studio sliders. */
+function tuneFrom(tune) {
+  if (!tune || typeof tune !== "object") return null;
+  const clamp = (n) => Math.max(0, Math.min(100, Math.round(Number(n))));
+  const f = Number(tune.formality);
+  const d = Number(tune.directness);
+  return Number.isFinite(f) && Number.isFinite(d) ? { formality: clamp(f), directness: clamp(d) } : null;
+}
+
 /**
  * Wraps a validator so an answer in the wrong language counts as a bad answer
  * while a retry is still available. After that it is accepted, and any
@@ -49,6 +58,8 @@ export async function POST(request) {
     language: LANGUAGES.has(body.language) ? body.language : "en",
     style: STYLES.has(body.style) ? body.style : "professional",
     tone: TONES.has(body.tone) ? body.tone : "auto",
+    tune: tuneFrom(body.tune),
+    preserveQuotes: body.preserveQuotes === true,
   };
 
   try {

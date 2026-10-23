@@ -63,7 +63,7 @@ export default function DraftPanel({ text, onTextChange, textareaRef, voice, voi
       onDrop={onDrop}
     >
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-rule px-4 py-3 sm:px-5">
-        <h2 className="font-display text-lg font-medium italic leading-none">Your draft</h2>
+        <h2 className="panel-title">Input rough draft</h2>
         <div className="flex flex-wrap items-center gap-2">
           <VoiceControl voice={voice} hint={voiceHint} onHintChange={onVoiceHintChange} />
           <button
@@ -103,7 +103,7 @@ export default function DraftPanel({ text, onTextChange, textareaRef, voice, voi
         />
         {dragging && (
           <div className="pointer-events-none absolute inset-2 flex flex-col items-center justify-center gap-1 rounded-[5px] border-2 border-dashed border-pencil bg-paper/90 text-center">
-            <p className="font-display text-xl italic">Drop an image to read its text</p>
+            <p className="font-display text-xl font-bold uppercase">Drop an image to read its text</p>
             <p className="text-xs text-ink-soft">{OCR_PRIVACY}</p>
           </div>
         )}

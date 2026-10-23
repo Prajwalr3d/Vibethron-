@@ -13,9 +13,14 @@ import MeaningBadge from "./MeaningBadge";
 import IntentBadge from "./IntentBadge";
 import ToneMeters from "./ToneMeters";
 import DriftView from "./DriftView";
+import IntentLockPanel from "./IntentLockPanel";
+import { checkIntent } from "@/lib/intentlock";
 import { CheckIcon, CloseIcon, CopyIcon, RefreshIcon, SpeakerIcon, StopIcon } from "./icons";
 
-export default function VibeCard({ vibe, index, original, originalTone, language, meaning, showChanges, regenerating, canRegenerate, onRegenerate, onRemove, onNotice }) {
+export default function VibeCard({
+  vibe, index, original, originalTone, language, meaning, showChanges, regenerating, canRegenerate, onRegenerate,
+  onRemove, onNotice, focused, strictness, onSave,
+}) {
   const [copied, setCopied] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const speakingRef = useRef(false);
@@ -23,6 +28,7 @@ export default function VibeCard({ vibe, index, original, originalTone, language
   const parts = useMemo(() => wordDiff(original, vibe.text), [original, vibe.text]);
   const stats = useMemo(() => changeStats(original, vibe.text, parts), [original, vibe.text, parts]);
   const facts = useMemo(() => checkFacts(original, vibe.text), [original, vibe.text]);
+  const lock = useMemo(() => checkIntent(original, vibe.text, strictness), [original, vibe.text, strictness]);
 
   useEffect(() => {
     speakingRef.current = speaking;
@@ -52,11 +58,16 @@ export default function VibeCard({ vibe, index, original, originalTone, language
   };
 
   return (
-    <article className="sheet sheet-lift reveal flex min-w-0 flex-col" style={{ "--i": index }}>
+    <article
+      id={`vibe-${vibe.id}`}
+      className={`sheet sheet-lift reveal flex min-w-0 scroll-mt-28 flex-col ${focused ? "!border-accent shadow-[4px_4px_0_var(--accent)]" : ""}`}
+      style={{ "--i": index }}
+    >
       <header className="flex items-start justify-between gap-3 px-5 pt-5 sm:px-6">
         <div className="min-w-0">
-          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-faint">
-            Vibe {String(index + 1).padStart(2, "0")}
+          <p className={`font-mono text-[10px] uppercase tracking-[0.16em] ${focused ? "text-accent" : "text-ink-faint"}`}>
+            Persona {String(index + 1).padStart(2, "0")}
+            {focused ? " / selected" : ""}
           </p>
           <h3 className="mt-1 font-display text-lg font-medium leading-tight">{vibe.name}</h3>
         </div>
@@ -95,13 +106,15 @@ export default function VibeCard({ vibe, index, original, originalTone, language
           </div>
         </div>
 
+        <IntentLockPanel lock={lock} />
+
         <p className="whitespace-pre-wrap break-words text-[15px] leading-7" lang={language === "hi" ? "hi" : undefined}>
           {showChanges ? <DiffText parts={parts} /> : <FactText text={vibe.text} marks={facts.marks} />}
         </p>
 
         {vibe.reaction && (
-          <p className="font-display text-[15px] italic text-ink-soft">
-            <span className="not-italic font-mono text-[10.5px] uppercase tracking-[0.12em] text-ink-faint">Likely reaction </span>
+          <p className="text-[14px] text-ink-soft">
+            <span className="font-mono text-[10.5px] uppercase tracking-[0.12em] text-ink-faint">Likely reaction </span>
             {vibe.reaction}
           </p>
         )}
@@ -139,6 +152,11 @@ export default function VibeCard({ vibe, index, original, originalTone, language
           {speaking ? <StopIcon size={15} /> : <SpeakerIcon size={15} />}
           {speaking ? "Stop" : "Read aloud"}
         </button>
+        {onSave && (
+          <button type="button" onClick={() => onSave(vibe)} className="btn-paper px-3 py-1.5 text-[13px]">
+            Save to Vault
+          </button>
+        )}
       </footer>
     </article>
   );

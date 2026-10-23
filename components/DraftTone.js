@@ -43,7 +43,7 @@ export default function DraftTone({ tone, text, targetTone, onDetect }) {
         </button>
       </div>
       {stale && <p className="text-[12.5px] text-amber">Your draft has changed since this reading.</p>}
-      {intent && <p className="font-display text-[15px] italic text-ink-soft">&ldquo;{intent}&rdquo;</p>}
+      {intent && <p className="text-[15px] text-ink-soft">&ldquo;{intent}&rdquo;</p>}
       <ToneMeters tone={t} index={0} />
     </div>
   );

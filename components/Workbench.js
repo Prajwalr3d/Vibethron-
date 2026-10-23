@@ -11,6 +11,9 @@ import { detectTone, regenerateVibe, transformDraft } from "@/lib/transformClien
 import { useMeaning } from "@/lib/useMeaning";
 import { useGrammar } from "@/lib/useGrammar";
 import { modelFor } from "@/lib/meaning";
+import { checkIntent } from "@/lib/intentlock";
+import { personaForVibe } from "@/lib/personas";
+import { useApp } from "@/spa/context/AppContext";
 import PreflightPanel from "./PreflightPanel";
 import DraftPanel from "./DraftPanel";
 import ControlsPanel from "./ControlsPanel";
@@ -31,9 +34,45 @@ function useAutoDismiss(notice, clear) {
 const scrollBehavior = () =>
   window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
 
-export default function Workbench() {
-  const [text, setText] = useState("");
-  const [settings, setSettings] = useState({ language: "en", style: "professional", tone: "auto" });
+/** A Vault entry for one rewrite, with its IntentLock and Fact Guard results. */
+function historyEntry(source, vibe, strictness) {
+  const lock = checkIntent(source.text, vibe.text, strictness);
+  return {
+    originalText: source.text,
+    transformedText: vibe.text,
+    persona: personaForVibe(vibe.id),
+    personaName: vibe.name,
+    // Intent counts as preserved only if the AI says so AND IntentLock found no critical risk.
+    intentPreserved: vibe.intent_preserved === true && lock.critical === 0,
+    risksFlagged: lock.critical + lock.moderate,
+    factsFound: lock.facts.found,
+    factsTotal: lock.facts.facts.length - lock.facts.unchecked.length,
+    language: source.settings.language,
+  };
+}
+
+/**
+ * The live engine behind the Studio page.
+ * focusVibe: the vibe id the persona selector highlights.
+ * onTransformingChange(bool): lets the 3D core react while a request runs.
+ */
+export default function Workbench({ focusVibe = "executive", onTransformingChange }) {
+  const { settings: appSettings, addHistoryItem } = useApp();
+  const strictness = appSettings.intentLockStrictness;
+  // A draft handed over from the Dashboard's quick launcher, if any.
+  const [text, setText] = useState(() => {
+    try {
+      return sessionStorage.getItem("intent_shift_draft") || "";
+    } catch {
+      return "";
+    }
+  });
+  useEffect(() => {
+    try {
+      sessionStorage.removeItem("intent_shift_draft");
+    } catch {}
+  }, []);
+  const [settings, setSettings] = useState({ language: "en", style: "professional", tone: "auto", tune: null });
   const [voiceHint, setVoiceHint] = useState("auto");
   const [notice, setNotice] = useState(null);
   const [run, setRun] = useState({ id: 0, status: "idle", result: null, source: null });
@@ -121,9 +160,18 @@ export default function Workbench() {
 
   const loading = run.status === "loading";
 
+  useEffect(() => {
+    onTransformingChange?.(loading);
+  }, [loading, onTransformingChange]);
+
+  const saveToVault = (vibe) => {
+    addHistoryItem(historyEntry(run.source, vibe, strictness));
+    toast("info", `Saved ${vibe.name} to your Vault.`);
+  };
+
   const transform = async () => {
     if (loading || !draftOk()) return;
-    const source = { text: text.trim(), settings };
+    const source = { text: text.trim(), settings: { ...settings, preserveQuotes: appSettings.preserveQuotes } };
     setNotice(null);
     setResultsNotice(null);
     setRun((r) => ({ ...r, status: "loading" }));
@@ -140,17 +188,25 @@ export default function Workbench() {
       });
     };
 
+    // Auto-save the focused persona's rewrite, as the Vault setting asks.
+    const autoSave = (result) => {
+      const vibe = result.vibes.find((v) => v.id === focusVibe) ?? result.vibes[0];
+      if (appSettings.autoSaveHistory && vibe) addHistoryItem(historyEntry(source, vibe, strictness));
+    };
+
     try {
-      const result = await transformDraft(source.text, settings);
+      const result = await transformDraft(source.text, source.settings);
       show(result);
+      autoSave(result);
       warnLanguage(result.warnings);
       goOnline();
     } catch (err) {
       const saved = cachedTransform(source.text);
       if (saved) {
         // Saved results are English; say so if another language was asked for.
-        source.settings = { ...settings, language: "en" };
+        source.settings = { ...source.settings, language: "en" };
         show(saved);
+        autoSave(saved);
         goOffline();
         if (settings.language !== "en") toast("info", "Saved demo results are in English only.");
         return;
@@ -325,6 +381,9 @@ export default function Workbench() {
         addingAudience={addingAudience}
         onAddAudience={addAudience}
         onRemoveAudience={removeAudience}
+        focusVibe={focusVibe}
+        strictness={strictness}
+        onSave={saveToVault}
       />
       <Toaster toasts={toasts} onDismiss={dismissToast} />
     </>

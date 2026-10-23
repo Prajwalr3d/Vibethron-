@@ -1,10 +1,22 @@
-# VibeShift
+# INTENT / SHIFT
 
-**We show you exactly what changed, and prove your facts survived.**
+**Change your tone. Keep your intent.** We show you exactly what changed, and prove your facts survived.
 
-VibeShift rewrites a draft message for four audiences (Executive C-Level, Supportive Peer, Legal/Compliance, Gen-Z Hype, plus any reader you describe) and then checks every rewrite. We don't ask the AI to grade itself: Fact Guard is plain code, Meaning Match is a local embedding model, and both run in your browser.
+INTENT / SHIFT rewrites a rough message for four personas (Executive, Supportive, Legal & Risk, Gen-Z Velocity, plus any reader you describe) and checks every rewrite. We don't ask the AI to grade itself: **IntentLock** and **Fact Guard** are plain code, and **Meaning Match** is a local embedding model that runs in your browser.
 
-Built for the 6-hour hackathon problem "Instant Persona and Communication Transformer". Next.js (App Router) + Tailwind.
+Built for the hackathon problem "Instant Persona and Communication Transformer". One Next.js (App Router) project: the INTENT / SHIFT React interface (`spa/`, react-router, three.js) is served by `app/[[...slug]]/page.js`, and the backend lives in `app/api/*`.
+
+## Pages
+
+| Page | What it does |
+|---|---|
+| **Overview** (`/`) | Landing page. Its mini transformer and IntentLock panels show labelled example outputs; the live engine is in the Studio. |
+| **Studio** (`/transformer`) | The live engine: draft input (typing, voice, image text, samples), language/style/tone and fine-tune sliders, all four personas in one call, IntentLock + Fact Guard + Meaning Match per rewrite, diff, grammar, draft tone, insights, export, Save to Vault. |
+| **IntentLock** (`/intentlock`) | Paste any original and rewrite; IntentLock checks commitments, deadlines, facts, conditions and negations instantly, with no AI. |
+| **Dashboard** (`/dashboard`) | Stats computed from your Vault (count, intent parity, risks flagged, most-used persona) and a quick launcher into the Studio. |
+| **Vault** (`/history`) | Rewrites you saved (auto-saved after each transform if enabled), stored in this browser. |
+| **Settings** (`/settings`) | IntentLock strictness, default persona, auto-save, preserve quotes, and which server keys are configured. |
+| **Profile** (`/auth`) | A name stored only in this browser. There are no accounts or passwords. |
 
 ## Setup
 
@@ -29,7 +41,7 @@ Keys are read only in server routes (`process.env`), never sent to the browser. 
 Other commands:
 
 ```bash
-npm test        # 49 unit tests (vitest): Fact Guard, Meaning Match helpers, grammar, insights, demo data
+npm test        # 58 unit tests (vitest): IntentLock, Fact Guard, Meaning Match helpers, Gemini client, language check, grammar, insights, demo data
 npm run lint
 npm run build
 ```
@@ -37,6 +49,8 @@ npm run build
 Get keys at [Google AI Studio](https://aistudio.google.com/apikey) (Gemini) and the [Groq console](https://console.groq.com/keys).
 
 ## How we verify
+
+**IntentLock** (`lib/intentlock.js`, plain code) groups risks the way the design does: *commitments* (a tentative "might" turned into "will"), *deadlines* and *facts* (from Fact Guard), *conditions* ("subject to", "if", "need approval first" dropped) and *negations & uncertainty* ("do not" or a hedge dropped). Each risk is critical or moderate; Settings > IntentLock strictness hides moderate risks (lenient) or also flags any new "will" (strict). These are wording heuristics: a negation that was rephrased ("can't afford" to "beyond our budget") is shown as moderate for you to check, not as an error.
 
 | Check | How it works | Who decides |
 |---|---|---|
@@ -70,12 +84,15 @@ Fact Guard and Meaning Match measure different things. In testing, a rewrite tha
 ## Project layout
 
 ```
-app/api/transform   Gemini rewrite (all vibes, one vibe, or a custom audience)
+spa/                INTENT / SHIFT interface (pages, 3D scenes, Vault and settings context)
+app/[[...slug]]     Serves the interface for every non-API path
+app/api/transform   Gemini rewrite (all personas, one persona, or a custom audience)
+app/api/status      Which server keys are configured (never the keys)
 app/api/tone        Gemini tone and intent of the draft
 app/api/grammar     LanguageTool, with a Gemini fallback
 app/api/transcribe  Groq Whisper
-lib/                Logic: factguard, meaning (+ worker), grammar, readability, insights, cached demo data
-components/         UI; components/insights holds the charts
+lib/                Logic: intentlock, factguard, meaning (+ worker), gemini, language check, grammar, insights, cached demo data
+components/         The Studio engine UI (cards, panels, charts) used by spa/pages/TransformerPage.tsx
 tests/              Vitest unit tests
 ```
 

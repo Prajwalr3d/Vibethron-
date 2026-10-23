@@ -1,58 +1,31 @@
 @import "tailwindcss";
 
-/* ---------- Editorial redline tokens ---------- */
+/* Engine UI tokens, mapped onto the INTENT / SHIFT brand (spa/index.css). Dark only. */
 :root {
-  color-scheme: light;
-  --desk: #ebe5da;
-  --paper: #fbf8f2;
-  --paper-2: #f3eee4;
-  --ink: #221e19;
-  --ink-soft: #5f584d;
-  --ink-faint: #8f877a;
-  --rule: rgba(34, 30, 25, 0.11);
-  --rule-strong: rgba(34, 30, 25, 0.24);
-  --margin-line: rgba(190, 58, 46, 0.3);
-  --ruled-line: rgba(44, 90, 140, 0.1);
-  --redpen: #b42a1f;
-  --redpen-soft: #f6dfd9;
-  --marker: #d3eea6;
-  --marker-ink: #2e5a1c;
-  --amber: #9c6210;
-  --amber-soft: #f7eacb;
-  --stamp: #2f6b3b;
-  --pencil: #2c5a8c;
-  --btn-ink: #221e19;
-  --btn-ink-text: #fbf8f2;
-  --shadow-sheet: 0 1px 0 rgba(60, 40, 20, 0.04),
-    0 22px 36px -26px rgba(60, 40, 20, 0.4);
-  --grain-opacity: 0.35;
-}
-
-:root[data-theme="dark"] {
   color-scheme: dark;
-  --desk: #14120f;
-  --paper: #1d1a16;
-  --paper-2: #25211c;
-  --ink: #ece5d8;
-  --ink-soft: #b4ab9b;
-  --ink-faint: #7f776a;
-  --rule: rgba(236, 229, 216, 0.1);
-  --rule-strong: rgba(236, 229, 216, 0.22);
-  --margin-line: rgba(240, 112, 95, 0.45);
-  --ruled-line: rgba(150, 180, 220, 0.07);
-  --redpen: #f0705f;
-  --redpen-soft: rgba(240, 112, 95, 0.14);
-  --marker: rgba(160, 215, 105, 0.4);
-  --marker-ink: #bfe59d;
-  --amber: #e2a94c;
-  --amber-soft: rgba(226, 169, 76, 0.14);
-  --stamp: #7cc68b;
-  --pencil: #8cb4e3;
-  --btn-ink: #ece5d8;
-  --btn-ink-text: #1d1a16;
-  --shadow-sheet: 0 1px 0 rgba(0, 0, 0, 0.3),
-    0 24px 40px -28px rgba(0, 0, 0, 0.8);
-  --grain-opacity: 0.18;
+  --desk: #0b0b0b;
+  --paper: #181818;
+  --paper-2: #242424;
+  --ink: #ffffff;
+  --ink-soft: #a8a8a8;
+  --ink-faint: #8a8a8a;
+  --rule: #242424;
+  --rule-strong: #3a3a3a;
+  --margin-line: rgba(255, 45, 168, 0.35);
+  --ruled-line: rgba(255, 255, 255, 0.04);
+  --redpen: #ff3b30;
+  --redpen-soft: rgba(255, 59, 48, 0.14);
+  --marker: rgba(212, 255, 63, 0.26);
+  --marker-ink: #d4ff3f;
+  --amber: #ffb020;
+  --amber-soft: rgba(255, 176, 32, 0.13);
+  --stamp: #d4ff3f;
+  --pencil: #ff2da8;
+  --accent: #ff2da8;
+  --accent-soft: rgba(255, 45, 168, 0.14);
+  --btn-ink: #ff2da8;
+  --btn-ink-text: #0b0b0b;
+  --shadow-sheet: none;
 }
 
 @theme inline {
@@ -72,149 +45,95 @@
   --color-amber-soft: var(--amber-soft);
   --color-stamp: var(--stamp);
   --color-pencil: var(--pencil);
-  --font-display: var(--font-fraunces), Georgia, serif;
-  --font-sans: var(--font-geist), system-ui, sans-serif;
-  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
-  --font-hand: var(--font-caveat), cursive;
-}
-
-html {
-  background: var(--desk);
-}
-
-body {
-  background-color: var(--desk);
-  color: var(--ink);
-  font-family: var(--font-sans);
-  line-height: 1.6;
-  overflow-x: hidden;
-}
-
-/* Faint paper grain on the desk */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  opacity: var(--grain-opacity);
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.28 0 0 0 0 0.2 0 0 0 0.09 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --font-display: var(--font-space-grotesk), system-ui, sans-serif;
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
 }
 
 ::selection {
-  background: var(--marker);
-  color: var(--ink);
+  background: var(--accent);
+  color: #0b0b0b;
 }
 
-:focus-visible {
-  outline: 2px solid var(--pencil);
-  outline-offset: 2px;
-}
-
-/* ---------- Paper sheets ---------- */
+/* ---------- Cards (brutalist: hairline border, 2px corners) ---------- */
 .sheet {
   position: relative;
   background: var(--paper);
   border: 1px solid var(--rule);
-  border-radius: 6px;
-  box-shadow: var(--shadow-sheet);
+  border-radius: 2px;
 }
 
-/* Rewrite cards lift slightly under the pointer, like a sheet picked up off the desk */
 .sheet-lift {
-  transition: box-shadow 220ms ease;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
 }
 @media (hover: hover) {
   .sheet-lift:hover {
-    box-shadow: var(--shadow-sheet), 0 14px 30px -20px rgba(60, 40, 20, 0.45);
+    border-color: var(--rule-strong);
+    box-shadow: 3px 3px 0 var(--accent);
   }
 }
 
-/* Legal-pad textarea: red margin rule + faint blue lines */
-.ruled {
-  --line: 28px;
-  --top: 10px;
-  line-height: var(--line);
-  padding: var(--top) 20px var(--top) 60px;
-  background-image: linear-gradient(
-      to right,
-      transparent 43px,
-      var(--margin-line) 43px,
-      var(--margin-line) 44px,
-      transparent 44px
-    ),
-    repeating-linear-gradient(
-      to bottom,
-      transparent 0,
-      transparent calc(var(--line) - 1px),
-      var(--ruled-line) calc(var(--line) - 1px),
-      var(--ruled-line) var(--line)
-    );
-  background-position: 0 0, 0 var(--top);
-  background-attachment: local;
+/* Panel headings in the studio's style: mono caps with a pink dot */
+.panel-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1;
+  color: var(--ink);
 }
-
-/* ---------- Editor marks ---------- */
-.marker {
-  background-image: linear-gradient(
-    100deg,
-    transparent 0.1em,
-    var(--marker) 0.22em,
-    var(--marker) calc(100% - 0.22em),
-    transparent 100%
-  );
-  background-repeat: no-repeat;
-  background-size: 100% 0.58em;
-  background-position: 0 86%;
-  padding: 0 0.08em;
-  color: inherit;
-}
-
-.pen-strike {
-  position: relative;
-  color: var(--ink-faint);
-  white-space: nowrap;
-}
-.pen-strike::after {
+.panel-title::before {
   content: "";
-  position: absolute;
-  left: -0.06em;
-  right: -0.06em;
-  top: 54%;
-  height: 0.09em;
-  min-height: 2px;
-  border-radius: 2px;
-  background: var(--redpen);
-  transform: rotate(-4deg);
-  transform-origin: left center;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
 }
 
-/* Hand-written margin note */
-.hand {
-  font-family: var(--font-hand);
-  color: var(--redpen);
-  line-height: 1.1;
+/* Draft textarea, matching the studio's input panel */
+.ruled {
+  line-height: 1.6;
+  padding: 16px;
+  background: var(--desk);
+  border: 1px solid var(--rule-strong);
+  border-radius: 2px;
+}
+.ruled:focus {
+  border-color: var(--accent);
 }
 
 /* ---------- Controls ---------- */
 .btn-ink {
   background: var(--btn-ink);
   color: var(--btn-ink-text);
-  border-radius: 5px;
-  transition: transform 120ms ease, opacity 150ms ease;
+  border: 1px solid var(--btn-ink);
+  border-radius: 2px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  box-shadow: 4px 4px 0 rgba(255, 45, 168, 0.35);
+  transition: transform 150ms ease, box-shadow 150ms ease;
 }
 .btn-ink:hover {
-  opacity: 0.9;
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 var(--stamp);
 }
 .btn-ink:active {
-  transform: scale(0.98);
+  transform: translate(1px, 1px);
+  box-shadow: 2px 2px 0 var(--stamp);
 }
 
 .btn-paper {
-  background: var(--paper);
+  background: var(--paper-2);
   color: var(--ink);
   border: 1px solid var(--rule-strong);
-  border-radius: 5px;
+  border-radius: 2px;
   transition: background-color 150ms ease, border-color 150ms ease,
     transform 120ms ease;
 }
@@ -232,11 +151,12 @@ body::before {
   transform: none;
 }
 
-/* Option chip: selected looks circled in red pen */
+/* Option chip: the selected one lights up in the brand pink */
 .chip {
   border: 1px solid var(--rule-strong);
-  border-radius: 999px;
+  border-radius: 2px;
   color: var(--ink-soft);
+  font-family: var(--font-mono);
   transition: color 150ms ease, border-color 150ms ease, background 150ms ease;
 }
 .chip:hover {
@@ -244,10 +164,9 @@ body::before {
   border-color: var(--ink-faint);
 }
 input:checked + .chip {
-  color: var(--redpen);
-  border-color: var(--redpen);
-  border-width: 1.5px;
-  background: var(--redpen-soft);
+  color: var(--ink);
+  border-color: var(--accent);
+  background: var(--accent-soft);
 }
 input:focus-visible + .chip {
   outline: 2px solid var(--pencil);
@@ -290,31 +209,9 @@ kbd {
       transform: none;
     }
   }
-  @keyframes strike-draw {
-    from {
-      transform: rotate(-4deg) scaleX(0);
-    }
-    to {
-      transform: rotate(-4deg) scaleX(1);
-    }
-  }
-  @keyframes marker-sweep {
-    from {
-      background-size: 0% 0.58em;
-    }
-    to {
-      background-size: 100% 0.58em;
-    }
-  }
   .reveal {
     animation: rise 640ms cubic-bezier(0.16, 1, 0.3, 1) both;
     animation-delay: calc(var(--i, 0) * 90ms);
-  }
-  .hero-strike::after {
-    animation: strike-draw 520ms cubic-bezier(0.65, 0, 0.35, 1) 500ms both;
-  }
-  .hero-marker {
-    animation: marker-sweep 620ms cubic-bezier(0.65, 0, 0.35, 1) 950ms both;
   }
 }
 
@@ -450,16 +347,8 @@ kbd {
   }
 }
 
-/* ---------- Chart series (validated with the dataviz palette checker on --paper) ---------- */
+/* ---------- Chart series (dataviz palette checker: all checks pass on #181818) ---------- */
 :root {
-  --series-1: #2a78d6;
-  --series-2: #eb6834;
-  --series-3: #1baf7a;
-  --series-4: #eda100;
-  --series-5: #e87ba4;
-  --series-neutral: #b9b2a5;
-}
-:root[data-theme="dark"] {
   --series-1: #3987e5;
   --series-2: #d95926;
   --series-3: #199e70;

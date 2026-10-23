@@ -6,7 +6,7 @@ export default function PreflightPanel({ text, tone, targetTone, onDetectTone, g
   return (
     <section className="sheet flex flex-col" aria-label="Before you send">
       <div className="border-b border-rule px-4 py-3 sm:px-5">
-        <h2 className="font-display text-lg font-medium italic leading-none">Before you send</h2>
+        <h2 className="panel-title">Before you send</h2>
       </div>
       <div className="px-4 py-4 sm:px-5">
         <h3 className="mb-3 font-mono text-[11px] uppercase tracking-[0.14em] text-ink-faint">Your draft&apos;s tone</h3>
