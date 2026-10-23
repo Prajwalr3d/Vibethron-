@@ -3,7 +3,7 @@ import { OUTPUT_LANGUAGES, TARGET_TONES, WRITING_STYLES } from "@/lib/options";
 import { MAX_CHARS } from "@/lib/textStats";
 import { SYSTEM_INSTRUCTION, buildFullPrompt, buildSinglePrompt } from "@/lib/prompt";
 import { FULL_SCHEMA, SINGLE_SCHEMA, normalizeFull, normalizeSingle } from "@/lib/transformSchema";
-import { VIBES, vibeById } from "@/lib/vibes";
+import { VIBES, customVibe, vibeById } from "@/lib/vibes";
 
 const ids = (list) => new Set(list.map((o) => o.id));
 const LANGUAGES = ids(OUTPUT_LANGUAGES);
@@ -17,6 +17,7 @@ function fail(status, error, code) {
 /**
  * POST { text, language, style, tone }              -> all four vibes + original analysis
  * POST { text, language, style, tone, vibe, previous } -> { vibe } (regenerate one card)
+ * POST { ..., vibe: "custom", audience }               -> { vibe } for a user-described reader
  */
 export async function POST(request) {
   const body = await request.json().catch(() => null);
@@ -36,8 +37,12 @@ export async function POST(request) {
 
   try {
     if (body.vibe) {
-      const def = vibeById(body.vibe);
-      if (!def) return fail(400, "Unknown vibe.", "bad_vibe");
+      const def = body.vibe === "custom" ? customVibe(body.audience) : vibeById(body.vibe);
+      if (!def) {
+        return body.vibe === "custom"
+          ? fail(400, "Describe the audience first.", "no_audience")
+          : fail(400, "Unknown vibe.", "bad_vibe");
+      }
       const previous = typeof body.previous === "string" ? body.previous.slice(0, MAX_CHARS * 2) : "";
       const vibe = await generateJson({
         system: SYSTEM_INSTRUCTION,

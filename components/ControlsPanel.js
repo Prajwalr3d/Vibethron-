@@ -1,8 +1,9 @@
 import OptionGroup from "./OptionGroup";
 import { OUTPUT_LANGUAGES, TARGET_TONES, WRITING_STYLES } from "@/lib/options";
 import { ArrowIcon } from "./icons";
+import MeaningStatus from "./MeaningStatus";
 
-export default function ControlsPanel({ settings, onChange, onTransform, busy }) {
+export default function ControlsPanel({ settings, onChange, onTransform, busy, meaningModels }) {
   const set = (key) => (value) => onChange({ ...settings, [key]: value });
 
   return (
@@ -43,6 +44,9 @@ export default function ControlsPanel({ settings, onChange, onTransform, busy })
             <ArrowIcon />
           </span>
         </button>
+        <div className="mt-3">
+          <MeaningStatus models={meaningModels} />
+        </div>
       </div>
     </section>
   );

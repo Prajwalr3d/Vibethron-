@@ -2,10 +2,17 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { changeStats, wordDiff } from "@/lib/changeStats";
+import { checkFacts } from "@/lib/factguard";
 import { speak, stopSpeaking } from "@/lib/speech";
 import DiffText from "./DiffText";
+import FactText from "./FactText";
 import CardStats from "./CardStats";
-import { CheckIcon, CopyIcon, RefreshIcon, SpeakerIcon, StopIcon } from "./icons";
+import FactStamp from "./FactStamp";
+import MeaningBadge from "./MeaningBadge";
+import IntentBadge from "./IntentBadge";
+import ToneMeters from "./ToneMeters";
+import DriftView from "./DriftView";
+import { CheckIcon, CloseIcon, CopyIcon, RefreshIcon, SpeakerIcon, StopIcon } from "./icons";
 
 async function copyText(text) {
   try {
@@ -25,13 +32,14 @@ async function copyText(text) {
   }
 }
 
-export default function VibeCard({ vibe, index, original, language, showChanges, regenerating, canRegenerate, onRegenerate, onNotice }) {
+export default function VibeCard({ vibe, index, original, originalTone, language, meaning, showChanges, regenerating, canRegenerate, onRegenerate, onRemove, onNotice }) {
   const [copied, setCopied] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const speakingRef = useRef(false);
 
   const parts = useMemo(() => wordDiff(original, vibe.text), [original, vibe.text]);
   const stats = useMemo(() => changeStats(original, vibe.text, parts), [original, vibe.text, parts]);
+  const facts = useMemo(() => checkFacts(original, vibe.text), [original, vibe.text]);
 
   useEffect(() => {
     speakingRef.current = speaking;
@@ -69,23 +77,65 @@ export default function VibeCard({ vibe, index, original, language, showChanges,
           </p>
           <h3 className="mt-1 font-display text-lg font-medium leading-tight">{vibe.name}</h3>
         </div>
-        <button
-          type="button"
-          onClick={() => onRegenerate(vibe.id)}
-          disabled={!canRegenerate || regenerating}
-          className="btn-paper inline-flex h-8 shrink-0 items-center gap-1.5 px-2.5 text-[13px]"
-          aria-label={`Regenerate ${vibe.name}`}
-          title="Write a fresh version of this vibe"
-        >
-          <RefreshIcon size={15} className={regenerating ? "animate-spin" : undefined} />
-          <span className="hidden sm:inline">{regenerating ? "Rewriting" : "Regenerate"}</span>
-        </button>
+        <div className="flex shrink-0 gap-1.5">
+          <button
+            type="button"
+            onClick={() => onRegenerate(vibe.id)}
+            disabled={!canRegenerate || regenerating}
+            className="btn-paper inline-flex h-8 items-center gap-1.5 px-2.5 text-[13px]"
+            aria-label={`Regenerate ${vibe.name}`}
+            title="Write a fresh version of this vibe"
+          >
+            <RefreshIcon size={15} className={regenerating ? "animate-spin" : undefined} />
+            <span className="hidden sm:inline">{regenerating ? "Rewriting" : "Regenerate"}</span>
+          </button>
+          {onRemove && (
+            <button
+              type="button"
+              onClick={onRemove}
+              className="btn-paper inline-flex h-8 w-8 items-center justify-center"
+              aria-label={`Remove ${vibe.name}`}
+              title="Remove this audience"
+            >
+              <CloseIcon size={15} />
+            </button>
+          )}
+        </div>
       </header>
 
-      <div className={`relative flex-1 px-5 py-4 sm:px-6 ${regenerating ? "opacity-40" : ""}`} aria-busy={regenerating}>
+      <div className={`flex flex-1 flex-col gap-4 px-5 py-4 sm:px-6 ${regenerating ? "opacity-40" : ""}`} aria-busy={regenerating}>
+        <div className="flex flex-wrap items-start gap-x-3 gap-y-2.5">
+          <FactStamp check={facts} index={index} />
+          <div className="flex flex-wrap items-center gap-2">
+            <MeaningBadge meaning={meaning} aiScore={vibe.meaning_score} />
+            <IntentBadge preserved={vibe.intent_preserved} note={vibe.intent_note} />
+          </div>
+        </div>
+
         <p className="whitespace-pre-wrap break-words text-[15px] leading-7" lang={language === "hi" ? "hi" : undefined}>
-          {showChanges ? <DiffText parts={parts} /> : vibe.text}
+          {showChanges ? <DiffText parts={parts} /> : <FactText text={vibe.text} marks={facts.marks} />}
         </p>
+
+        {vibe.reaction && (
+          <p className="font-display text-[15px] italic text-ink-soft">
+            <span className="not-italic font-mono text-[10.5px] uppercase tracking-[0.12em] text-ink-faint">Likely reaction </span>
+            {vibe.reaction}
+          </p>
+        )}
+
+        {vibe.risks.length > 0 && (
+          <ul className="flex flex-wrap gap-1.5" aria-label="Risks">
+            {vibe.risks.map((r) => (
+              <li key={r} className="rounded-[4px] border border-amber/40 bg-amber-soft px-2 py-0.5 text-[12.5px] text-amber">
+                {r}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <ToneMeters tone={vibe.tone} original={originalTone} index={index} />
+
+        {meaning.state === "local" && meaning.sentences.length > 0 && <DriftView sentences={meaning.sentences} />}
       </div>
 
       <div className="border-t border-dashed border-rule-strong px-5 py-3 sm:px-6">

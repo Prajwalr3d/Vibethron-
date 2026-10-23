@@ -5,6 +5,8 @@ import { appendText } from "@/lib/textStats";
 import { useVoiceInput } from "@/lib/useVoiceInput";
 import { useOcr } from "@/lib/useOcr";
 import { regenerateVibe, transformDraft } from "@/lib/transformClient";
+import { useMeaning } from "@/lib/useMeaning";
+import { modelFor } from "@/lib/meaning";
 import DraftPanel from "./DraftPanel";
 import ControlsPanel from "./ControlsPanel";
 import Notice from "./Notice";
@@ -33,8 +35,12 @@ export default function Workbench() {
   const [regenerating, setRegenerating] = useState({});
   const [showChanges, setShowChanges] = useState(false);
   const [resultsNotice, setResultsNotice] = useState(null);
+  const [addingAudience, setAddingAudience] = useState(null);
+  const [meaningScores, setMeaningScores] = useState({});
+  const requestedScores = useRef(new Set());
   const textareaRef = useRef(null);
   const resultsRef = useRef(null);
+  const { models: meaningModels, measure } = useMeaning();
 
   const showError = useCallback((message) => setNotice({ kind: "error", message }), []);
   const showInfo = useCallback((message) => setNotice({ kind: "info", message }), []);
@@ -85,7 +91,7 @@ export default function Workbench() {
     if (!previous) return;
     setRegenerating((r) => ({ ...r, [vibeId]: true }));
     try {
-      const vibe = await regenerateVibe(source.text, source.settings, vibeId, previous.text);
+      const vibe = await regenerateVibe(source.text, source.settings, vibeId, previous.text, previous.audience);
       // Ignore the answer if a newer full transform replaced these cards meanwhile.
       setRun((r) =>
         r.id === runId && r.result
@@ -101,6 +107,64 @@ export default function Workbench() {
         return next;
       });
     }
+  };
+
+  const addAudience = async (audience) => {
+    const { id: runId, source } = run;
+    setAddingAudience(audience);
+    try {
+      const vibe = await regenerateVibe(source.text, source.settings, "custom", undefined, audience);
+      setRun((r) =>
+        r.id === runId && r.result
+          ? { ...r, result: { ...r.result, vibes: [...r.result.vibes.filter((v) => v.id !== "custom"), vibe] } }
+          : r
+      );
+      return true;
+    } catch (err) {
+      resultsError(`Couldn't write for "${audience}". ${err.message}`);
+      return false;
+    } finally {
+      setAddingAudience(null);
+    }
+  };
+
+  const removeAudience = () =>
+    setRun((r) => ({ ...r, result: { ...r.result, vibes: r.result.vibes.filter((v) => v.id !== "custom") } }));
+
+  // Meaning Match: score every rewrite the local models can judge.
+  const scoreKey = (model, original, text) => `${model}|${original}|${text}`;
+  useEffect(() => {
+    const { result, source } = run;
+    if (!result) return;
+    const groups = {};
+    for (const v of result.vibes) {
+      const model = modelFor(source.settings.language, source.text, v.text);
+      if (!model) continue;
+      const key = scoreKey(model, source.text, v.text);
+      if (requestedScores.current.has(key)) continue;
+      requestedScores.current.add(key);
+      (groups[model] ??= []).push({ key, text: v.text });
+    }
+    for (const [model, rewrites] of Object.entries(groups)) {
+      measure(model, source.text, rewrites)
+        .then((results) => setMeaningScores((s) => ({ ...s, ...results })))
+        .catch(() =>
+          setMeaningScores((s) => ({ ...s, ...Object.fromEntries(rewrites.map((r) => [r.key, { error: true }])) }))
+        );
+    }
+  }, [run, measure]);
+
+  const meaningFor = (vibe) => {
+    const { source } = run;
+    const model = modelFor(source.settings.language, source.text, vibe.text);
+    if (!model) {
+      return { state: "ai", reason: "Romanised Hindi is outside what the local models can judge, so this is the rewriting AI's own estimate." };
+    }
+    const score = meaningScores[scoreKey(model, source.text, vibe.text)];
+    if (score?.error || meaningModels[model]?.status === "error") {
+      return { state: "ai", reason: "The local meaning model couldn't load, so this is the rewriting AI's own estimate." };
+    }
+    return score ? { state: "local", ...score } : { state: "pending" };
   };
 
   // Ctrl/Cmd + Enter from anywhere on the page.
@@ -139,7 +203,13 @@ export default function Workbench() {
           />
           <Notice notice={notice} onDismiss={() => setNotice(null)} />
         </div>
-        <ControlsPanel settings={settings} onChange={setSettings} onTransform={transform} busy={loading} />
+        <ControlsPanel
+          settings={settings}
+          onChange={setSettings}
+          onTransform={transform}
+          busy={loading}
+          meaningModels={meaningModels}
+        />
       </div>
 
       <ResultsSection
@@ -152,6 +222,10 @@ export default function Workbench() {
         regenerating={regenerating}
         onRegenerate={regenerate}
         onNotice={resultsError}
+        meaningFor={meaningFor}
+        addingAudience={addingAudience}
+        onAddAudience={addAudience}
+        onRemoveAudience={removeAudience}
       />
     </>
   );

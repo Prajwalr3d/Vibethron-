@@ -1,4 +1,5 @@
 import { VIBES } from "@/lib/vibes";
+import AudienceForm from "./AudienceForm";
 import EmptyState from "./EmptyState";
 import Notice from "./Notice";
 import VibeCard from "./VibeCard";
@@ -27,9 +28,13 @@ function ChangesToggle({ on, disabled, onToggle }) {
   );
 }
 
-export default function ResultsSection({ sectionRef, run, notice, onDismissNotice, showChanges, onToggleChanges, regenerating, onRegenerate, onNotice }) {
+export default function ResultsSection({
+  sectionRef, run, notice, onDismissNotice, showChanges, onToggleChanges, regenerating, onRegenerate, onNotice,
+  meaningFor, addingAudience, onAddAudience, onRemoveAudience,
+}) {
   const { status, result, source } = run;
   const loading = status === "loading";
+  const hasCustom = result?.vibes.some((v) => v.id === "custom");
 
   return (
     <section ref={sectionRef} className="reveal mt-14 scroll-mt-6 pb-20" style={{ "--i": 3 }} aria-labelledby="results-heading">
@@ -60,22 +65,35 @@ export default function ResultsSection({ sectionRef, run, notice, onDismissNotic
           ))}
         </div>
       ) : result ? (
-        <div key={run.id} className="grid gap-5 md:grid-cols-2">
-          {result.vibes.map((vibe, i) => (
-            <VibeCard
-              key={vibe.id}
-              vibe={vibe}
-              index={i}
-              original={source.text}
-              language={source.settings.language}
-              showChanges={showChanges}
-              regenerating={!!regenerating[vibe.id]}
-              canRegenerate={!loading}
-              onRegenerate={onRegenerate}
-              onNotice={onNotice}
-            />
-          ))}
-        </div>
+        <>
+          <div key={run.id} className="grid gap-5 md:grid-cols-2">
+            {result.vibes.map((vibe, i) => (
+              <VibeCard
+                key={vibe.id}
+                vibe={vibe}
+                index={i}
+                original={source.text}
+                originalTone={result.original_tone}
+                language={source.settings.language}
+                meaning={meaningFor(vibe)}
+                showChanges={showChanges}
+                regenerating={!!regenerating[vibe.id]}
+                canRegenerate={!loading}
+                onRegenerate={onRegenerate}
+                onRemove={vibe.id === "custom" ? onRemoveAudience : undefined}
+                onNotice={onNotice}
+              />
+            ))}
+            {addingAudience && (
+              <VibeSkeleton vibe={{ name: addingAudience }} index={result.vibes.length} />
+            )}
+          </div>
+          {!hasCustom && (
+            <div className="mt-5">
+              <AudienceForm busy={!!addingAudience} onAdd={onAddAudience} />
+            </div>
+          )}
+        </>
       ) : (
         <EmptyState />
       )}
