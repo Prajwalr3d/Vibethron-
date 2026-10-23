@@ -70,6 +70,13 @@ export default function Workbench() {
     offlineRef.current = true;
     setOffline(true);
   }, [toast]);
+  // The server retries once when a rewrite comes back in the wrong language; say so if it still did.
+  const warnLanguage = (warnings) => {
+    if (warnings?.length) {
+      toast("info", `Not quite the language you asked for: ${warnings.join("; ")}. Regenerate that card to try again.`);
+    }
+  };
+
   const goOnline = () => {
     offlineRef.current = false;
     setOffline(false);
@@ -134,7 +141,9 @@ export default function Workbench() {
     };
 
     try {
-      show(await transformDraft(source.text, settings));
+      const result = await transformDraft(source.text, settings);
+      show(result);
+      warnLanguage(result.warnings);
       goOnline();
     } catch (err) {
       const saved = cachedTransform(source.text);
@@ -158,7 +167,8 @@ export default function Workbench() {
     if (!previous) return;
     setRegenerating((r) => ({ ...r, [vibeId]: true }));
     try {
-      const vibe = await regenerateVibe(source.text, source.settings, vibeId, previous.text, previous.audience);
+      const { vibe, warnings } = await regenerateVibe(source.text, source.settings, vibeId, previous.text, previous.audience);
+      warnLanguage(warnings);
       // Ignore the answer if a newer full transform replaced these cards meanwhile.
       setRun((r) =>
         r.id === runId && r.result
@@ -185,7 +195,8 @@ export default function Workbench() {
     const { id: runId, source } = run;
     setAddingAudience(audience);
     try {
-      const vibe = await regenerateVibe(source.text, source.settings, "custom", undefined, audience);
+      const { vibe, warnings } = await regenerateVibe(source.text, source.settings, "custom", undefined, audience);
+      warnLanguage(warnings);
       setRun((r) =>
         r.id === runId && r.result
           ? { ...r, result: { ...r.result, vibes: [...r.result.vibes.filter((v) => v.id !== "custom"), vibe] } }

@@ -2,7 +2,8 @@ import { FriendlyError, generateJson } from "@/lib/gemini";
 import { OUTPUT_LANGUAGES, TARGET_TONES, WRITING_STYLES } from "@/lib/options";
 import { MAX_CHARS, hasWords } from "@/lib/textStats";
 import { SYSTEM_INSTRUCTION, buildFullPrompt, buildSinglePrompt } from "@/lib/prompt";
-import { FULL_SCHEMA, SINGLE_SCHEMA, normalizeFull, normalizeSingle } from "@/lib/transformSchema";
+import { FULL_SCHEMA, SINGLE_SCHEMA, ShapeError, normalizeFull, normalizeSingle } from "@/lib/transformSchema";
+import { languageWarnings } from "@/lib/languageCheck";
 import { VIBES, customVibe, vibeById } from "@/lib/vibes";
 
 const ids = (list) => new Set(list.map((o) => o.id));
@@ -12,6 +13,20 @@ const TONES = ids(TARGET_TONES);
 
 function fail(status, error, code) {
   return Response.json({ error, code }, { status });
+}
+
+/**
+ * Wraps a validator so an answer in the wrong language counts as a bad answer
+ * while a retry is still available. After that it is accepted, and any
+ * remaining misses go back to the user as warnings.
+ */
+function inLanguage(language, normalize) {
+  return (data, { canRetry } = {}) => {
+    const result = normalize(data);
+    const vibes = result.vibes ?? result;
+    if (canRetry && languageWarnings(vibes, language).length) throw new ShapeError("Wrong output language");
+    return result;
+  };
 }
 
 /**
@@ -49,18 +64,18 @@ export async function POST(request) {
         system: SYSTEM_INSTRUCTION,
         prompt: buildSinglePrompt({ text, settings, vibe: def, previous }),
         schema: SINGLE_SCHEMA,
-        validate: (data) => normalizeSingle(data, def),
+        validate: inLanguage(settings.language, (data) => [normalizeSingle(data, def)]),
       });
-      return Response.json({ vibe });
+      return Response.json({ vibe: vibe[0], warnings: languageWarnings(vibe, settings.language) });
     }
 
     const result = await generateJson({
       system: SYSTEM_INSTRUCTION,
       prompt: buildFullPrompt({ text, settings, vibes: VIBES }),
       schema: FULL_SCHEMA,
-      validate: (data) => normalizeFull(data, VIBES),
+      validate: inLanguage(settings.language, (data) => normalizeFull(data, VIBES)),
     });
-    return Response.json(result);
+    return Response.json({ ...result, warnings: languageWarnings(result.vibes, settings.language) });
   } catch (err) {
     if (err instanceof FriendlyError) return fail(err.status, err.message, err.code);
     console.error("transform failed", err);

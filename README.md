@@ -19,15 +19,17 @@ npm run dev                  # http://localhost:3000
 | Variable | Needed for | Without it |
 |---|---|---|
 | `GEMINI_API_KEY` | Rewriting, tone detection, Hindi/Hinglish grammar | The three sample drafts still work in **offline demo mode** (saved results). Other drafts show a clear error. |
-| `GEMINI_MODEL` | Optional override | Defaults to `gemini-3.8-flash` (current stable Flash model as of October 2026). |
-| `GROQ_API_KEY` | Voice input through Whisper (`whisper-large-v3`) | Falls back to the browser's own speech recognition (Chrome/Edge). |
+| `GEMINI_MODEL` | Optional override, tried first | Defaults to `gemini-3.6-flash`, falling back to `gemini-3.5-flash` then `gemini-3.1-flash-lite` on overload (503), rate limits (429), timeouts or unknown models. |
+| `GROQ_API_KEY` | Voice input through Whisper (`whisper-large-v3`). Groq keys start with `gsk_`. | Falls back to the browser's own speech recognition (Chrome/Edge). |
+
+Paste keys without quotes. On the Gemini free tier the per-minute quota is small: a full transform plus tone and grammar calls can hit it, and the app then moves to the next model (quotas are per model).
 
 Keys are read only in server routes (`process.env`), never sent to the browser. `.env.local` is gitignored (`.env*` in `.gitignore`, with `.env.example` explicitly allowed).
 
 Other commands:
 
 ```bash
-npm test        # 35 unit tests (vitest): Fact Guard, Meaning Match helpers, grammar, insights, demo data
+npm test        # 49 unit tests (vitest): Fact Guard, Meaning Match helpers, grammar, insights, demo data
 npm run lint
 npm run build
 ```
@@ -93,11 +95,13 @@ tests/              Vitest unit tests
 
 Being explicit, because a demo should not overclaim:
 
-- **No live Gemini run during development.** No `GEMINI_API_KEY` was available while building, so rewriting, tone detection and Hindi/Hinglish grammar were tested against stubbed responses and the saved demo data, not the live API. The request follows Google's current `generateContent` docs; if `gemini-3.8-flash` rejects the JSON schema or `thinkingLevel` option, the route retries once without them.
-- **Whisper not tested live** (no `GROQ_API_KEY`), and live microphone recording was not tested in an automated browser. The no-key fallback to browser speech recognition was tested.
+- **Live Gemini results (2026-10-23):** rewriting, tone detection and Hindi/Hinglish grammar were tested live. `gemini-3.8-flash` and `3.7-flash` were overloaded (503s and 60s hangs), which is why the default is `3.6-flash` with fallbacks. A full transform takes about 7-25 s depending on load. When every model is overloaded or out of quota, the user gets a clear "overloaded" or "request limit" message.
+- **Gemini sometimes ignores the output language** (a Hindi request answered in English or Hinglish; formal Legal/Executive rewrites in plain English when Hinglish was asked). The server checks the script, retries once, and shows a warning if a rewrite still misses.
+- **Gemini drops facts in practice**: in live runs Fact Guard caught real omissions (a promised "15 March" date, "since August", "QA", sign-off names). Gemini's own `meaning_score` was 100 for every rewrite, so the AI-estimated score carries little information; prefer the local Meaning Match.
+- **Whisper not tested live**: the key provided was not a Groq key (Groq returned 401), and live microphone recording was not tested in an automated browser. The route's key-rejected error and the browser speech-recognition fallback were tested.
 - **Fact Guard name detection is heuristic.** A name that starts a bullet line and appears nowhere else (for example "Ananya out 21-24 Oct") is not detected, to avoid treating every capitalised first word as a name. Spelled-out numbers are matched only from zero to twelve.
 - **Meaning drift is strict.** A sentence merged into a longer one can be flagged as "possibly changed" (scores around 0.44-0.6).
-- **Thresholds were calibrated on hand-written rewrites**, not on real Gemini output. Re-check them once you have real rewrites.
+- **Thresholds were calibrated on hand-written rewrites and confirmed on 16 real Gemini rewrites**, which all scored 80-93 (Strong). The sentence-level drift view is noisier on real output, especially Hindi, where 8-10 of 24 original sentences were flagged, partly because real rewrites legitimately drop lines like "I am done chasing you".
 - **LanguageTool's free rules miss some errors** (for example "It were" and "five chart" were not flagged in testing). Its free API allows about 20 requests per minute per IP; VibeShift caps itself at 15 per minute with a 4-second cooldown.
 - **The rate limiter is in memory**, so it resets on restart and is not shared across serverless instances.
 - **Offline demo mode covers only the three samples, in English.** Regenerate and custom audiences need the AI.
